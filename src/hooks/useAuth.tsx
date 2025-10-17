@@ -1,11 +1,22 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { User, AuthState, UserRole } from '@/types/auth';
+import { User, Company, AuthState, UserRole, BusinessType } from '@/types/auth';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
 
+interface SignupData {
+  companyName: string;
+  businessType: string;
+  location: string;
+  companyEmail: string;
+  companyPhone?: string;
+  adminName: string;
+  adminEmail: string;
+  password: string;
+}
+
 interface AuthContextType extends AuthState {
   login: (email: string, password: string) => Promise<void>;
-  signup: (email: string, password: string, name: string, role: string) => Promise<void>;
+  signup: (data: SignupData) => Promise<void>;
   logout: () => void;
 }
 
@@ -13,27 +24,45 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [company, setCompany] = useState<Company | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
-    if (storedUser) {
+    const storedCompany = localStorage.getItem('company');
+    if (storedUser && storedCompany) {
       const parsedUser = JSON.parse(storedUser);
+      const parsedCompany = JSON.parse(storedCompany);
       setUser(parsedUser);
+      setCompany(parsedCompany);
       setIsAuthenticated(true);
     }
   }, []);
 
   const login = async (email: string, password: string) => {
     const users = JSON.parse(localStorage.getItem('users') || '[]');
+    const companies = JSON.parse(localStorage.getItem('companies') || '[]');
     const foundUser = users.find((u: any) => u.email === email && u.password === password);
 
     if (foundUser) {
+      const userCompany = companies.find((c: any) => c.id === foundUser.companyId);
+      
+      if (!userCompany) {
+        toast({
+          title: "Login Failed",
+          description: "Company not found",
+          variant: "destructive",
+        });
+        throw new Error('Company not found');
+      }
+
       const { password: _, ...userWithoutPassword } = foundUser;
       setUser(userWithoutPassword);
+      setCompany(userCompany);
       setIsAuthenticated(true);
       localStorage.setItem('user', JSON.stringify(userWithoutPassword));
+      localStorage.setItem('company', JSON.stringify(userCompany));
       
       toast({
         title: "Login Successful",
@@ -62,10 +91,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const signup = async (email: string, password: string, name: string, role: string) => {
+  const signup = async (data: SignupData) => {
     const users = JSON.parse(localStorage.getItem('users') || '[]');
+    const companies = JSON.parse(localStorage.getItem('companies') || '[]');
     
-    if (users.some((u: any) => u.email === email)) {
+    if (users.some((u: any) => u.email === data.adminEmail)) {
       toast({
         title: "Signup Failed",
         description: "Email already registered",
@@ -74,46 +104,54 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw new Error('Email already exists');
     }
 
-    const newUser = {
+    // Create company
+    const newCompany: Company = {
       id: crypto.randomUUID(),
-      email,
-      password,
-      name,
-      role: role as UserRole,
+      companyName: data.companyName,
+      businessType: data.businessType as BusinessType,
+      location: data.location,
+      email: data.companyEmail,
+      phone: data.companyPhone,
       createdAt: new Date().toISOString(),
     };
 
+    // Create admin user
+    const newUser = {
+      id: crypto.randomUUID(),
+      email: data.adminEmail,
+      password: data.password,
+      name: data.adminName,
+      role: 'admin' as UserRole,
+      companyId: newCompany.id,
+      createdAt: new Date().toISOString(),
+    };
+
+    companies.push(newCompany);
     users.push(newUser);
+    localStorage.setItem('companies', JSON.stringify(companies));
     localStorage.setItem('users', JSON.stringify(users));
 
     const { password: _, ...userWithoutPassword } = newUser;
     setUser(userWithoutPassword);
+    setCompany(newCompany);
     setIsAuthenticated(true);
     localStorage.setItem('user', JSON.stringify(userWithoutPassword));
+    localStorage.setItem('company', JSON.stringify(newCompany));
 
     toast({
-      title: "Account Created",
-      description: "Your account has been created successfully!",
+      title: "Business Registered",
+      description: "Your business account has been created successfully!",
     });
 
-    // Redirect based on role
-    switch (role) {
-      case 'admin':
-        navigate('/admin');
-        break;
-      case 'marketer':
-        navigate('/marketer');
-        break;
-      case 'sales':
-        navigate('/sales');
-        break;
-    }
+    navigate('/admin');
   };
 
   const logout = () => {
     setUser(null);
+    setCompany(null);
     setIsAuthenticated(false);
     localStorage.removeItem('user');
+    localStorage.removeItem('company');
     navigate('/login');
     toast({
       title: "Logged Out",
@@ -122,7 +160,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated, login, signup, logout }}>
+    <AuthContext.Provider value={{ user, company, isAuthenticated, login, signup, logout }}>
       {children}
     </AuthContext.Provider>
   );

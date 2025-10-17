@@ -16,13 +16,16 @@ interface DashboardLayoutProps {
 }
 
 export function DashboardLayout({ children, title, menuItems }: DashboardLayoutProps) {
-  const { user, logout } = useAuth();
+  const { user, company, logout } = useAuth();
   const location = useLocation();
 
   const Sidebar = () => (
     <div className="flex flex-col h-full">
       <div className="p-6 border-b">
         <h2 className="text-2xl font-bold text-primary">MarketFlow</h2>
+        {company && (
+          <p className="text-sm font-medium mt-3">{company.companyName}</p>
+        )}
         <p className="text-sm text-muted-foreground mt-1">{user?.name}</p>
         <p className="text-xs text-muted-foreground capitalize">{user?.role}</p>
       </div>
