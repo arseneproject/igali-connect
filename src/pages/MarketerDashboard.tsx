@@ -2,8 +2,11 @@ import { DashboardLayout } from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Mail, MessageSquare, Share2, Users, BarChart3, Plus } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const MarketerDashboard = () => {
+  const navigate = useNavigate();
+  
   const menuItems = [
     { label: "Dashboard", path: "/marketer", icon: <BarChart3 className="h-4 w-4" /> },
     { label: "Campaigns", path: "/marketer/campaigns", icon: <Mail className="h-4 w-4" /> },
@@ -57,15 +60,27 @@ const MarketerDashboard = () => {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-4 md:grid-cols-3">
-            <Button className="h-24 flex flex-col gap-2" variant="outline">
+            <Button 
+              className="h-24 flex flex-col gap-2" 
+              variant="outline"
+              onClick={() => navigate('/marketer/campaigns')}
+            >
               <Mail className="h-8 w-8" />
               <span>Email Campaign</span>
             </Button>
-            <Button className="h-24 flex flex-col gap-2" variant="outline">
+            <Button 
+              className="h-24 flex flex-col gap-2" 
+              variant="outline"
+              onClick={() => navigate('/marketer/campaigns')}
+            >
               <MessageSquare className="h-8 w-8" />
               <span>SMS Campaign</span>
             </Button>
-            <Button className="h-24 flex flex-col gap-2" variant="outline">
+            <Button 
+              className="h-24 flex flex-col gap-2" 
+              variant="outline"
+              onClick={() => navigate('/marketer/campaigns')}
+            >
               <Share2 className="h-8 w-8" />
               <span>Social Media Post</span>
             </Button>

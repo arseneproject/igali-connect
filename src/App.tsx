@@ -11,6 +11,7 @@ import Signup from "./pages/Signup";
 import AdminDashboard from "./pages/AdminDashboard";
 import MarketerDashboard from "./pages/MarketerDashboard";
 import SalesDashboard from "./pages/SalesDashboard";
+import Campaigns from "./pages/Campaigns";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -39,6 +40,14 @@ const App = () => (
               element={
                 <ProtectedRoute allowedRoles={['marketer']}>
                   <MarketerDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/marketer/campaigns"
+              element={
+                <ProtectedRoute allowedRoles={['marketer']}>
+                  <Campaigns />
                 </ProtectedRoute>
               }
             />
