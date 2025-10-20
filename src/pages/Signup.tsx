@@ -209,6 +209,11 @@ const Signup = () => {
             <Link to="/login" className="text-primary hover:underline font-medium">
               Sign in
             </Link>
+            <div className="mt-2">
+              <Link to="/" className="text-muted-foreground hover:underline">
+                ← Home
+              </Link>
+            </div>
           </div>
         </CardContent>
       </Card>
