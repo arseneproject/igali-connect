@@ -1,9 +1,16 @@
 import { ReactNode } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
-import { LogOut, Menu } from "lucide-react";
+import { LogOut, Menu, Bell, Mail, User, ChevronDown } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -18,6 +25,12 @@ interface DashboardLayoutProps {
 export function DashboardLayout({ children, title, menuItems }: DashboardLayoutProps) {
   const { user, company, logout } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
 
   const Sidebar = () => (
     <div className="flex flex-col h-full">
@@ -46,7 +59,7 @@ export function DashboardLayout({ children, title, menuItems }: DashboardLayoutP
         })}
       </nav>
       <div className="p-4 border-t">
-        <Button onClick={logout} variant="outline" className="w-full justify-start">
+        <Button onClick={handleLogout} variant="outline" className="w-full justify-start">
           <LogOut className="h-4 w-4" />
           <span className="ml-2">Logout</span>
         </Button>
@@ -78,10 +91,39 @@ export function DashboardLayout({ children, title, menuItems }: DashboardLayoutP
             </Sheet>
             <h1 className="text-2xl font-bold">{title}</h1>
           </div>
-          <Button onClick={logout} variant="ghost" className="hidden md:flex">
-            <LogOut className="h-4 w-4 mr-2" />
-            Logout
-          </Button>
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="icon">
+              <Bell className="h-5 w-5" />
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="flex items-center gap-2">
+                  <User className="h-5 w-5" />
+                  <span>{user?.name}</span>
+                  <ChevronDown className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem onClick={() => navigate('/profile')}>
+                  <User className="h-4 w-4 mr-2" />
+                  Profile
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <Bell className="h-4 w-4 mr-2" />
+                  Notifications
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <Mail className="h-4 w-4 mr-2" />
+                  Messages
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleLogout}>
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Logout
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </header>
 
         {/* Content */}
