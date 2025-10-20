@@ -151,7 +151,7 @@ export const CampaignForm = ({ campaign, onSubmit, onCancel }: CampaignFormProps
       </div>
 
       <div className="space-y-2">
-        <Label>Target Audience</Label>
+        <Label>Target Audiences</Label>
         <div className="flex gap-2">
           <Input
             value={audienceInput}
