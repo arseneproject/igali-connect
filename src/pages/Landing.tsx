@@ -1,5 +1,7 @@
 import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useEffect } from "react";
+import { useAuth } from "@/hooks/useAuth";
 import { ArrowRight, Mail, MessageSquare, Share2, BarChart3, Users, Zap, Check, Phone, MapPin, Linkedin, Twitter, Facebook } from "lucide-react";
 import {
   Accordion,
@@ -9,6 +11,19 @@ import {
 } from "@/components/ui/accordion";
 
 const Landing = () => {
+  const { isAuthenticated, user } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (isAuthenticated && user?.role) {
+      const target =
+        user.role === 'admin' ? '/admin' :
+        user.role === 'marketer' ? '/marketer' :
+        '/sales';
+      navigate(target, { replace: true });
+    }
+  }, [isAuthenticated, user, navigate]);
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
