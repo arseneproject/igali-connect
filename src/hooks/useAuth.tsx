@@ -70,7 +70,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .from('profiles')
         .select('*, companies(*)')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
 
       if (profileError) throw profileError;
 
@@ -82,8 +82,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (rolesError) throw rolesError;
 
-      const userRole = roles?.[0]?.role as UserRole;
+    const userRole = roles?.[0]?.role as UserRole;
 
+    if (!profile) {
+      // Profile not found - create minimal user from session and role
+      const baseEmail = session?.user?.email ?? '';
+      const fallbackUser: User = {
+        id: userId,
+        email: baseEmail,
+        name: baseEmail ? baseEmail.split('@')[0] : 'User',
+        role: userRole,
+        companyId: '',
+        phone: undefined,
+        createdAt: new Date().toISOString(),
+      };
+      setUser(fallbackUser);
+      setCompany(null);
+      setIsAuthenticated(true);
+    } else {
       const userData: User = {
         id: profile.id,
         email: profile.email,
@@ -107,6 +123,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(userData);
       setCompany(companyData);
       setIsAuthenticated(true);
+    }
     } catch (error) {
       console.error('Error fetching user data:', error);
     } finally {
@@ -132,13 +149,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         });
 
         // Redirect based on role - will happen after fetchUserData completes
-        const { data: roles } = await supabase
+        const { data: roleRow } = await supabase
           .from('user_roles')
           .select('role')
           .eq('user_id', data.user.id)
-          .single();
+          .maybeSingle();
 
-        const userRole = roles?.role;
+        const userRole = roleRow?.role;
         
         switch (userRole) {
           case 'admin':
