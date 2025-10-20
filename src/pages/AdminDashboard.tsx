@@ -43,6 +43,8 @@ const AdminDashboard = () => {
   useEffect(() => {
     if (company?.id) {
       fetchTeamMembers();
+    } else {
+      setLoading(false);
     }
   }, [company?.id]);
 

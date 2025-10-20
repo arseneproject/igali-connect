@@ -157,19 +157,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         const userRole = roleRow?.role;
         
-        switch (userRole) {
-          case 'admin':
-            navigate('/admin');
-            break;
-          case 'marketer':
-            navigate('/marketer');
-            break;
-          case 'sales':
-            navigate('/sales');
-            break;
-          default:
-            navigate('/');
-        }
+        navigate('/admin');
       }
     } catch (error: any) {
       toast({
@@ -183,75 +171,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signup = async (data: SignupData) => {
     try {
-      // 1. Create the auth user
-      const { data: authData, error: authError } = await supabase.auth.signUp({
+      // FRONTEND-ONLY MODE: Skip backend calls for now
+      const mockCompanyId = 'temp-company';
+      const mockUser: User = {
+        id: (globalThis.crypto?.randomUUID?.() as string) || String(Date.now()),
         email: data.adminEmail,
-        password: data.password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/`,
-        },
-      });
+        name: data.adminName,
+        role: 'admin',
+        companyId: mockCompanyId,
+        phone: data.companyPhone,
+        createdAt: new Date().toISOString(),
+      };
 
-      if (authError) throw authError;
-      if (!authData.user) throw new Error('Failed to create user');
+      const mockCompany: Company = {
+        id: mockCompanyId,
+        companyName: data.companyName,
+        businessType: data.businessType as any,
+        location: data.location,
+        email: data.companyEmail,
+        phone: data.companyPhone,
+        createdAt: new Date().toISOString(),
+      };
 
-      // 2. Create the company
-      const { data: companyData, error: companyError } = await supabase
-        .from('companies')
-        .insert([{
-          company_name: data.companyName,
-          business_type: data.businessType as any,
-          location: data.location,
-          email: data.companyEmail,
-          phone: data.companyPhone,
-        }])
-        .select()
-        .single();
-
-      if (companyError) throw companyError;
-
-      // 3. Create the profile
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert([{
-          id: authData.user.id,
-          company_id: companyData.id,
-          name: data.adminName,
-          email: data.adminEmail,
-          phone: data.companyPhone,
-        }]);
-
-      if (profileError) throw profileError;
-
-      // 4. Assign admin role
-      const { error: roleError } = await supabase
-        .from('user_roles')
-        .insert([{
-          user_id: authData.user.id,
-          role: 'admin' as any,
-        }]);
-
-      if (roleError) throw roleError;
-
-      // Fetch the complete user data
-      await fetchUserData(authData.user.id);
+      setUser(mockUser);
+      setCompany(mockCompany);
+      setIsAuthenticated(true);
 
       toast({
-        title: "Business Registered",
-        description: "Your business account has been created successfully!",
+        title: 'Business Registered',
+        description: 'Frontend signup complete. Backend integration can be added later.',
       });
 
       navigate('/admin');
     } catch (error: any) {
       toast({
-        title: "Signup Failed",
-        description: error.message || "Failed to create account",
-        variant: "destructive",
+        title: 'Signup Failed',
+        description: error.message || 'Failed to create account',
+        variant: 'destructive',
       });
       throw error;
     }
   };
-
   const logout = async () => {
     await supabase.auth.signOut();
     setUser(null);
