@@ -1,145 +1,207 @@
 import { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/DashboardLayout";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Plus, Mail, MessageSquare, Share2, BarChart3 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { BarChart3, Mail, MessageSquare, Plus, Share2, Users, Edit, Trash2, Play, Pause } from "lucide-react";
 import { CampaignForm } from "@/components/CampaignForm";
-import { Campaign, CampaignStatus, CampaignType } from "@/types/campaign";
+import { Campaign, CampaignType, CampaignStatus } from "@/types/campaign";
 import { useToast } from "@/hooks/use-toast";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 const Campaigns = () => {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCampaign, setEditingCampaign] = useState<Campaign | null>(null);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const { user, company } = useAuth();
 
   const menuItems = [
     { label: "Dashboard", path: "/marketer", icon: <BarChart3 className="h-4 w-4" /> },
     { label: "Campaigns", path: "/marketer/campaigns", icon: <Mail className="h-4 w-4" /> },
-    { label: "Contacts", path: "/marketer/contacts", icon: <Users className="h-4 w-4" /> },
-    { label: "Analytics", path: "/marketer/analytics", icon: <BarChart3 className="h-4 w-4" /> },
   ];
 
   useEffect(() => {
-    loadCampaigns();
-  }, []);
+    if (company?.id && user?.id) {
+      fetchCampaigns();
+    }
+  }, [company?.id, user?.id]);
 
-  const loadCampaigns = () => {
-    const stored = localStorage.getItem('campaigns');
-    if (stored) {
-      setCampaigns(JSON.parse(stored));
+  const fetchCampaigns = async () => {
+    try {
+      const { data, error } = await (supabase as any)
+        .from('campaigns')
+        .select('*')
+        .eq('company_id', company!.id)
+        .order('created_at', { ascending: false});
+
+      if (error) throw error;
+      
+      const mappedData = ((data || []) as any[]).map((campaign: any) => ({
+        id: campaign.id,
+        name: campaign.name,
+        type: campaign.type as CampaignType,
+        status: campaign.status as CampaignStatus,
+        subject: campaign.subject,
+        content: campaign.content,
+        scheduledDate: campaign.scheduled_date,
+        targetAudience: campaign.target_audience,
+        attachments: campaign.attachments,
+        createdAt: campaign.created_at,
+        updatedAt: campaign.updated_at,
+        companyId: campaign.company_id,
+        createdBy: campaign.created_by,
+      }));
+      
+      setCampaigns(mappedData);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
-  const saveCampaigns = (updatedCampaigns: Campaign[]) => {
-    localStorage.setItem('campaigns', JSON.stringify(updatedCampaigns));
-    setCampaigns(updatedCampaigns);
-  };
+  const handleSaveCampaign = async (campaign: Omit<Campaign, 'id' | 'createdAt' | 'updatedAt' | 'companyId' | 'createdBy'>) => {
+    try {
+      if (editingCampaign) {
+        const { error } = await (supabase as any)
+          .from('campaigns')
+          .update({
+            name: campaign.name,
+            type: campaign.type,
+            status: campaign.status,
+            subject: campaign.subject,
+            content: campaign.content,
+            scheduled_date: campaign.scheduledDate,
+            target_audience: campaign.targetAudience,
+            attachments: campaign.attachments,
+          })
+          .eq('id', editingCampaign.id);
 
-  const handleCreateCampaign = (campaign: Omit<Campaign, 'id' | 'createdAt' | 'updatedAt'>) => {
-    const newCampaign: Campaign = {
-      ...campaign,
-      id: Date.now().toString(),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    saveCampaigns([...campaigns, newCampaign]);
-    setIsCreateOpen(false);
-    toast({
-      title: "Campaign created",
-      description: "Your campaign has been created successfully.",
-    });
-  };
+        if (error) throw error;
 
-  const handleUpdateCampaign = (updated: Campaign) => {
-    const updatedCampaigns = campaigns.map(c => 
-      c.id === updated.id ? { ...updated, updatedAt: new Date().toISOString() } : c
-    );
-    saveCampaigns(updatedCampaigns);
-    setEditingCampaign(null);
-    toast({
-      title: "Campaign updated",
-      description: "Your campaign has been updated successfully.",
-    });
-  };
+        toast({
+          title: "Campaign updated",
+          description: "Your campaign has been updated successfully.",
+        });
+      } else {
+        const { error } = await (supabase as any)
+          .from('campaigns')
+          .insert({
+            name: campaign.name,
+            type: campaign.type,
+            status: campaign.status,
+            subject: campaign.subject,
+            content: campaign.content,
+            scheduled_date: campaign.scheduledDate,
+            target_audience: campaign.targetAudience,
+            attachments: campaign.attachments,
+            company_id: company!.id,
+            created_by: user!.id,
+          });
 
-  const handleDeleteCampaign = (id: string) => {
-    const updatedCampaigns = campaigns.filter(c => c.id !== id);
-    saveCampaigns(updatedCampaigns);
-    setDeletingId(null);
-    toast({
-      title: "Campaign deleted",
-      description: "Your campaign has been deleted successfully.",
-    });
-  };
+        if (error) throw error;
 
-  const handleStatusChange = (id: string, newStatus: CampaignStatus) => {
-    const updatedCampaigns = campaigns.map(c =>
-      c.id === id ? { ...c, status: newStatus, updatedAt: new Date().toISOString() } : c
-    );
-    saveCampaigns(updatedCampaigns);
-    toast({
-      title: "Status updated",
-      description: `Campaign status changed to ${newStatus}.`,
-    });
-  };
+        toast({
+          title: "Campaign created",
+          description: "Your campaign has been created successfully.",
+        });
+      }
 
-  const getTypeIcon = (type: CampaignType) => {
-    switch (type) {
-      case 'email':
-        return <Mail className="h-4 w-4" />;
-      case 'sms':
-        return <MessageSquare className="h-4 w-4" />;
-      case 'social':
-        return <Share2 className="h-4 w-4" />;
+      fetchCampaigns();
+      setIsDialogOpen(false);
+      setEditingCampaign(null);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
     }
   };
 
-  const getStatusBadge = (status: CampaignStatus) => {
-    const variants = {
-      draft: "secondary",
-      scheduled: "default",
-      running: "default",
-      completed: "secondary",
-    } as const;
+  const handleDeleteCampaign = async (id: string) => {
+    try {
+      const { error } = await (supabase as any)
+        .from('campaigns')
+        .delete()
+        .eq('id', id);
 
-    return <Badge variant={variants[status]}>{status.charAt(0).toUpperCase() + status.slice(1)}</Badge>;
+      if (error) throw error;
+
+      toast({
+        title: "Campaign deleted",
+        description: "Campaign has been deleted successfully.",
+      });
+      fetchCampaigns();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleStatusChange = async (id: string, status: CampaignStatus) => {
+    try {
+      const { error } = await (supabase as any)
+        .from('campaigns')
+        .update({ status })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Status updated",
+        description: `Campaign status changed to ${status}.`,
+      });
+      fetchCampaigns();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleEdit = (campaign: Campaign) => {
+    setEditingCampaign(campaign);
+    setIsDialogOpen(true);
   };
 
   const stats = {
+    total: campaigns.length,
     email: campaigns.filter(c => c.type === 'email').length,
     sms: campaigns.filter(c => c.type === 'sms').length,
     social: campaigns.filter(c => c.type === 'social').length,
-    active: campaigns.filter(c => c.status === 'running').length,
   };
 
   return (
-    <DashboardLayout title="Campaign Management" menuItems={menuItems}>
+    <DashboardLayout title="Campaigns" menuItems={menuItems}>
       <div className="grid gap-6 md:grid-cols-4 mb-6">
-        <Card>
+        <Card className="animate-scale-in">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Email Campaigns</CardTitle>
+            <CardTitle className="text-sm font-medium">Total Campaigns</CardTitle>
+            <BarChart3 className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.total}</div>
+          </CardContent>
+        </Card>
+
+        <Card className="animate-scale-in" style={{ animationDelay: '0.1s' }}>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Email</CardTitle>
             <Mail className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -147,9 +209,9 @@ const Campaigns = () => {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="animate-scale-in" style={{ animationDelay: '0.2s' }}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">SMS Campaigns</CardTitle>
+            <CardTitle className="text-sm font-medium">SMS</CardTitle>
             <MessageSquare className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -157,146 +219,99 @@ const Campaigns = () => {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="animate-scale-in" style={{ animationDelay: '0.3s' }}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Social Posts</CardTitle>
+            <CardTitle className="text-sm font-medium">Social</CardTitle>
             <Share2 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.social}</div>
           </CardContent>
         </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Campaigns</CardTitle>
-            <Play className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.active}</div>
-          </CardContent>
-        </Card>
       </div>
 
       <Card>
-        <CardHeader>
-          <div className="flex justify-between items-center">
-            <div>
-              <CardTitle>All Campaigns</CardTitle>
-              <CardDescription>Manage your marketing campaigns</CardDescription>
-            </div>
-            <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-              <DialogTrigger asChild>
-                <Button>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create Campaign
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle>Create New Campaign</DialogTitle>
-                  <DialogDescription>
-                    Fill in the details to create a new marketing campaign
-                  </DialogDescription>
-                </DialogHeader>
-                <CampaignForm onSubmit={handleCreateCampaign} onCancel={() => setIsCreateOpen(false)} />
-              </DialogContent>
-            </Dialog>
-          </div>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>All Campaigns</CardTitle>
+          <Button onClick={() => {
+            setEditingCampaign(null);
+            setIsDialogOpen(true);
+          }}>
+            <Plus className="h-4 w-4 mr-2" />
+            New Campaign
+          </Button>
         </CardHeader>
         <CardContent>
-          {campaigns.length === 0 ? (
-            <div className="text-center py-12">
-              <Mail className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <p className="text-muted-foreground mb-4">No campaigns yet. Create your first campaign to get started!</p>
-              <Button onClick={() => setIsCreateOpen(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Create Campaign
-              </Button>
-            </div>
+          {loading ? (
+            <p className="text-center py-8">Loading campaigns...</p>
+          ) : campaigns.length === 0 ? (
+            <p className="text-center py-8 text-muted-foreground">
+              No campaigns yet. Create your first campaign to get started!
+            </p>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Type</TableHead>
                   <TableHead>Name</TableHead>
+                  <TableHead>Type</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Target Audience</TableHead>
                   <TableHead>Scheduled Date</TableHead>
-                  <TableHead>Audience</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {campaigns.map((campaign) => (
                   <TableRow key={campaign.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        {getTypeIcon(campaign.type)}
-                        <span className="capitalize">{campaign.type}</span>
-                      </div>
-                    </TableCell>
                     <TableCell className="font-medium">{campaign.name}</TableCell>
-                    <TableCell>{getStatusBadge(campaign.status)}</TableCell>
                     <TableCell>
-                      {campaign.scheduledDate
-                        ? new Date(campaign.scheduledDate).toLocaleDateString()
-                        : '-'}
+                      <Badge variant="outline" className="capitalize">
+                        {campaign.type}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge 
+                        variant={
+                          campaign.status === 'completed' ? 'default' :
+                          campaign.status === 'running' ? 'secondary' :
+                          'outline'
+                        }
+                        className="capitalize"
+                      >
+                        {campaign.status}
+                      </Badge>
                     </TableCell>
                     <TableCell>{campaign.targetAudience.length} contacts</TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
+                    <TableCell>
+                      {campaign.scheduledDate 
+                        ? new Date(campaign.scheduledDate).toLocaleDateString()
+                        : '-'
+                      }
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEdit(campaign)}
+                        >
+                          Edit
+                        </Button>
                         {campaign.status === 'draft' && (
                           <Button
-                            variant="ghost"
-                            size="icon"
+                            variant="outline"
+                            size="sm"
                             onClick={() => handleStatusChange(campaign.id, 'scheduled')}
-                            title="Schedule"
                           >
-                            <Play className="h-4 w-4" />
+                            Schedule
                           </Button>
                         )}
-                        {campaign.status === 'running' && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleStatusChange(campaign.id, 'completed')}
-                            title="Complete"
-                          >
-                            <Pause className="h-4 w-4" />
-                          </Button>
-                        )}
-                        <Dialog open={editingCampaign?.id === campaign.id} onOpenChange={(open) => !open && setEditingCampaign(null)}>
-                          <DialogTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => setEditingCampaign(campaign)}
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-                            <DialogHeader>
-                              <DialogTitle>Edit Campaign</DialogTitle>
-                              <DialogDescription>
-                                Update your campaign details
-                              </DialogDescription>
-                            </DialogHeader>
-                            {editingCampaign && (
-                              <CampaignForm
-                                campaign={editingCampaign}
-                                onSubmit={handleUpdateCampaign}
-                                onCancel={() => setEditingCampaign(null)}
-                              />
-                            )}
-                          </DialogContent>
-                        </Dialog>
                         <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => setDeletingId(campaign.id)}
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleDeleteCampaign(campaign.id)}
                         >
-                          <Trash2 className="h-4 w-4 text-destructive" />
+                          Delete
                         </Button>
                       </div>
                     </TableCell>
@@ -308,22 +323,26 @@ const Campaigns = () => {
         </CardContent>
       </Card>
 
-      <AlertDialog open={!!deletingId} onOpenChange={(open) => !open && setDeletingId(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the campaign.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => deletingId && handleDeleteCampaign(deletingId)}>
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <Dialog open={isDialogOpen} onOpenChange={(open) => {
+        setIsDialogOpen(open);
+        if (!open) setEditingCampaign(null);
+      }}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>
+              {editingCampaign ? 'Edit Campaign' : 'Create New Campaign'}
+            </DialogTitle>
+          </DialogHeader>
+          <CampaignForm
+            campaign={editingCampaign}
+            onSubmit={handleSaveCampaign}
+            onCancel={() => {
+              setIsDialogOpen(false);
+              setEditingCampaign(null);
+            }}
+          />
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 };

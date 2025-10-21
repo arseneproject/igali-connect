@@ -49,7 +49,7 @@ const SuperAdminDashboard = () => {
             .select('*', { count: 'exact', head: true })
             .eq('company_id', company.id);
 
-          const campaignResult = await supabase
+          const campaignResult = await (supabase as any)
             .from('campaigns')
             .select('id', { count: 'exact', head: true })
             .eq('company_id', company.id);

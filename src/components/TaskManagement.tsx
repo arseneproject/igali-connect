@@ -56,7 +56,7 @@ export function TaskManagement() {
 
   const fetchTasks = async () => {
     try {
-      const { data: tasksData, error: tasksError } = await supabase
+      const { data: tasksData, error: tasksError } = await (supabase as any)
         .from('tasks')
         .select('*')
         .eq('company_id', company!.id)
@@ -65,12 +65,12 @@ export function TaskManagement() {
       if (tasksError) throw tasksError;
 
       const tasksWithNames = await Promise.all(
-        (tasksData || []).map(async (task) => {
+        ((tasksData || []) as any[]).map(async (task: any) => {
           const { data: profileData } = await supabase
             .from('profiles')
             .select('name')
             .eq('id', task.assigned_to)
-            .single();
+            .maybeSingle();
 
           return {
             ...task,
@@ -109,7 +109,7 @@ export function TaskManagement() {
     e.preventDefault();
 
     try {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('tasks')
         .insert([{
           title: formData.title,
@@ -149,7 +149,7 @@ export function TaskManagement() {
 
   const handleStatusChange = async (taskId: string, newStatus: string) => {
     try {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('tasks')
         .update({ status: newStatus })
         .eq('id', taskId)
