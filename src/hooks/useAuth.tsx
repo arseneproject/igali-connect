@@ -20,6 +20,8 @@ interface AuthContextType extends AuthState {
   login: (email: string, password: string) => Promise<void>;
   signup: (data: SignupData) => Promise<void>;
   logout: () => void;
+  loading: boolean;
+  session: Session | null;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -148,7 +150,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           description: `Welcome back!`,
         });
 
-        // Redirect based on role - will happen after fetchUserData completes
+        // Redirect based on role
         const { data: roleRow } = await supabase
           .from('user_roles')
           .select('role')
@@ -157,7 +159,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         const userRole = roleRow?.role;
         
-        navigate('/admin');
+        // Redirect to appropriate dashboard based on role
+        const roleDashboards: Record<string, string> = {
+          admin: '/admin',
+          marketer: '/marketer',
+          sales: '/sales',
+          super_admin: '/super-admin',
+        };
+        
+        navigate(roleDashboards[userRole] || '/admin');
       }
     } catch (error: any) {
       toast({
@@ -225,12 +235,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  if (loading) {
-    return null; // Or a loading spinner
-  }
-
   return (
-    <AuthContext.Provider value={{ user, company, isAuthenticated, login, signup, logout }}>
+    <AuthContext.Provider value={{ user, company, isAuthenticated, login, signup, logout, loading, session }}>
       {children}
     </AuthContext.Provider>
   );

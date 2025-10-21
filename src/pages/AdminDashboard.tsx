@@ -96,6 +96,15 @@ const AdminDashboard = () => {
   const handleAddUser = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (!company?.id) {
+      toast({
+        title: "Error",
+        description: "Company information not found. Please refresh and try again.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     try {
       // 1. Create the auth user
       const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -114,7 +123,7 @@ const AdminDashboard = () => {
         .from('profiles')
         .insert([{
           id: authData.user.id,
-          company_id: company?.id || '',
+          company_id: company.id,
           name: newUserName,
           email: newUserEmail,
         }]);
