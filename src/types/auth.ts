@@ -1,4 +1,4 @@
-export type UserRole = 'admin' | 'marketer' | 'sales';
+export type UserRole = 'admin' | 'marketer' | 'sales' | 'super_admin';
 export type BusinessType = 'retail' | 'services' | 'technology' | 'manufacturing' | 'healthcare' | 'education' | 'other';
 
 export interface Company {

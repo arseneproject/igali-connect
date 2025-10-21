@@ -11,6 +11,7 @@ import Signup from "./pages/Signup";
 import AdminDashboard from "./pages/AdminDashboard";
 import MarketerDashboard from "./pages/MarketerDashboard";
 import SalesDashboard from "./pages/SalesDashboard";
+import SuperAdminDashboard from "./pages/SuperAdminDashboard";
 import Campaigns from "./pages/Campaigns";
 import NotFound from "./pages/NotFound";
 
@@ -56,6 +57,14 @@ const App = () => (
               element={
                 <ProtectedRoute allowedRoles={['sales']}>
                   <SalesDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/super-admin"
+              element={
+                <ProtectedRoute allowedRoles={['super_admin']}>
+                  <SuperAdminDashboard />
                 </ProtectedRoute>
               }
             />

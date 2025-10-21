@@ -8,10 +8,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { UserPlus, Users, TrendingUp, Mail, Trash2, BarChart3, Settings } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { DashboardLayout } from "@/components/DashboardLayout";
+import { TaskManagement } from "@/components/TaskManagement";
 
 interface TeamMember {
   id: string;
@@ -356,6 +358,33 @@ const AdminDashboard = () => {
           </Table>
         </CardContent>
       </Card>
+
+      <Tabs defaultValue="team" className="mt-6">
+        <TabsList>
+          <TabsTrigger value="team">Team Members</TabsTrigger>
+          <TabsTrigger value="tasks">Tasks</TabsTrigger>
+          <TabsTrigger value="campaigns">Campaigns</TabsTrigger>
+        </TabsList>
+        <TabsContent value="team">
+          {/* Team members table already above */}
+        </TabsContent>
+        <TabsContent value="tasks">
+          <TaskManagement />
+        </TabsContent>
+        <TabsContent value="campaigns">
+          <Card>
+            <CardHeader>
+              <CardTitle>Company Campaigns</CardTitle>
+              <CardDescription>View all campaigns from your company</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground text-center py-8">
+                Campaign overview coming soon
+              </p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </DashboardLayout>
   );
 };
