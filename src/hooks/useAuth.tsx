@@ -135,22 +135,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string) => {
     try {
+      console.log('🔐 Login attempt started for:', email);
+      
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
+      console.log('🔐 Auth response:', { user: data.user?.id, error });
+
       if (error) throw error;
 
       if (data.user) {
+        console.log('✅ User authenticated:', data.user.id);
+        
         // Fetch user role
-        const { data: roleRow } = await supabase
+        const { data: roleRow, error: roleError } = await supabase
           .from('user_roles')
           .select('role')
           .eq('user_id', data.user.id)
           .maybeSingle();
 
+        console.log('👤 Role query result:', { roleRow, roleError });
+
         const userRole = roleRow?.role;
+        
+        if (!userRole) {
+          console.error('❌ No role found for user:', data.user.id);
+          throw new Error('User role not found. Please contact support.');
+        }
+
+        console.log('✅ User role:', userRole);
         
         toast({
           title: "Login Successful",
@@ -165,9 +180,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           super_admin: '/super-admin',
         };
         
-        navigate(roleDashboards[userRole] || '/admin');
+        const redirectPath = roleDashboards[userRole] || '/admin';
+        console.log('🚀 Redirecting to:', redirectPath);
+        navigate(redirectPath);
       }
     } catch (error: any) {
+      console.error('❌ Login error:', error);
       toast({
         title: "Login Failed",
         description: error.message || "Invalid email or password",
@@ -179,7 +197,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signup = async (data: SignupData) => {
     try {
+      console.log('📝 Starting signup process for:', data.adminEmail);
+      console.log('📝 Company data:', { 
+        name: data.companyName, 
+        type: data.businessType, 
+        location: data.location 
+      });
+
       // 1. Create auth user
+      console.log('1️⃣ Creating auth user...');
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: data.adminEmail,
         password: data.password,
@@ -191,55 +217,92 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       });
 
+      console.log('1️⃣ Auth result:', { userId: authData.user?.id, error: authError });
       if (authError) throw authError;
       if (!authData.user) throw new Error('User creation failed');
+      console.log('✅ Auth user created:', authData.user.id);
 
       // 2. Create company
-      const { data: companyData, error: companyError } = await (supabase as any)
+      console.log('2️⃣ Creating company...');
+      const companyInsert = {
+        company_name: data.companyName,
+        business_type: data.businessType as 'retail' | 'services' | 'technology' | 'manufacturing' | 'healthcare' | 'education' | 'other',
+        location: data.location,
+        email: data.companyEmail,
+        phone: data.companyPhone,
+      };
+      console.log('2️⃣ Company insert data:', companyInsert);
+
+      const { data: companyData, error: companyError } = await supabase
         .from('companies')
-        .insert([{
-          company_name: data.companyName,
-          business_type: data.businessType,
-          location: data.location,
-          email: data.companyEmail,
-          phone: data.companyPhone,
-        }])
+        .insert([companyInsert])
         .select()
         .single();
 
-      if (companyError) throw companyError;
+      console.log('2️⃣ Company result:', { companyData, error: companyError });
+      if (companyError) {
+        console.error('❌ Company creation failed:', companyError);
+        throw companyError;
+      }
+      console.log('✅ Company created:', companyData.id);
 
       // 3. Create profile
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert([{
-          id: authData.user.id,
-          company_id: companyData.id,
-          name: data.adminName,
-          email: data.adminEmail,
-          phone: data.companyPhone,
-        }]);
+      console.log('3️⃣ Creating profile...');
+      const profileInsert = {
+        id: authData.user.id,
+        company_id: companyData.id,
+        name: data.adminName,
+        email: data.adminEmail,
+        phone: data.companyPhone,
+      };
+      console.log('3️⃣ Profile insert data:', profileInsert);
 
-      if (profileError) throw profileError;
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .insert([profileInsert])
+        .select();
+
+      console.log('3️⃣ Profile result:', { profileData, error: profileError });
+      if (profileError) {
+        console.error('❌ Profile creation failed:', profileError);
+        throw profileError;
+      }
+      console.log('✅ Profile created');
 
       // 4. Assign admin role
-      const { error: roleError } = await supabase
+      console.log('4️⃣ Assigning admin role...');
+      const roleInsert = {
+        user_id: authData.user.id,
+        role: 'admin' as 'admin' | 'marketer' | 'sales',
+      };
+      console.log('4️⃣ Role insert data:', roleInsert);
+
+      const { data: roleData, error: roleError } = await supabase
         .from('user_roles')
-        .insert([{
-          user_id: authData.user.id,
-          role: 'admin',
-        }]);
+        .insert([roleInsert])
+        .select();
 
-      if (roleError) throw roleError;
+      console.log('4️⃣ Role result:', { roleData, error: roleError });
+      if (roleError) {
+        console.error('❌ Role assignment failed:', roleError);
+        throw roleError;
+      }
+      console.log('✅ Admin role assigned');
 
+      console.log('🎉 Signup completed successfully!');
+      
       toast({
         title: 'Business Registered Successfully',
         description: 'Your account has been created. Redirecting to dashboard...',
       });
 
       // Navigate to admin dashboard
-      navigate('/admin');
+      setTimeout(() => {
+        console.log('🚀 Redirecting to /admin');
+        navigate('/admin');
+      }, 1000);
     } catch (error: any) {
+      console.error('❌ Signup error:', error);
       toast({
         title: 'Signup Failed',
         description: error.message || 'Failed to create account',
