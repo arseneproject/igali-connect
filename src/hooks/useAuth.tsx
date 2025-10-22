@@ -210,7 +210,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         email: data.adminEmail,
         password: data.password,
         options: {
-          emailRedirectTo: `${window.location.origin}/admin`,
+          // Always redirect back to app root after email confirmation
+          emailRedirectTo: `${window.location.origin}/`,
           data: {
             name: data.adminName,
           }
@@ -222,7 +223,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!authData.user) throw new Error('User creation failed');
       console.log('✅ Auth user created:', authData.user.id);
 
-      // 2. Create company
+      // 1.1 Ensure we have an authenticated session before RLS-protected inserts
+      console.log('⏳ Waiting for authenticated session...');
+      const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+      let sessionUserId = authData.user.id;
+      for (let i = 0; i < 15; i++) { // up to ~3s
+        const { data: sess } = await supabase.auth.getSession();
+        if (sess.session?.user?.id) {
+          sessionUserId = sess.session.user.id;
+          console.log('✅ Session ready for user:', sessionUserId);
+          break;
+        }
+        await wait(200);
+      }
+
+      // 2. Create company (requires authenticated session to satisfy RLS)
       console.log('2️⃣ Creating company...');
       const companyInsert = {
         company_name: data.companyName,
