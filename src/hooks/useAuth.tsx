@@ -143,14 +143,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (error) throw error;
 
       if (data.user) {
-        await fetchUserData(data.user.id);
-        
-        toast({
-          title: "Login Successful",
-          description: `Welcome back!`,
-        });
-
-        // Redirect based on role
+        // Fetch user role
         const { data: roleRow } = await supabase
           .from('user_roles')
           .select('role')
@@ -159,6 +152,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         const userRole = roleRow?.role;
         
+        toast({
+          title: "Login Successful",
+          description: `Welcome back!`,
+        });
+
         // Redirect to appropriate dashboard based on role
         const roleDashboards: Record<string, string> = {
           admin: '/admin',
@@ -181,37 +179,65 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signup = async (data: SignupData) => {
     try {
-      // FRONTEND-ONLY MODE: Skip backend calls for now
-      const mockCompanyId = 'temp-company';
-      const mockUser: User = {
-        id: (globalThis.crypto?.randomUUID?.() as string) || String(Date.now()),
+      // 1. Create auth user
+      const { data: authData, error: authError } = await supabase.auth.signUp({
         email: data.adminEmail,
-        name: data.adminName,
-        role: 'admin',
-        companyId: mockCompanyId,
-        phone: data.companyPhone,
-        createdAt: new Date().toISOString(),
-      };
-
-      const mockCompany: Company = {
-        id: mockCompanyId,
-        companyName: data.companyName,
-        businessType: data.businessType as any,
-        location: data.location,
-        email: data.companyEmail,
-        phone: data.companyPhone,
-        createdAt: new Date().toISOString(),
-      };
-
-      setUser(mockUser);
-      setCompany(mockCompany);
-      setIsAuthenticated(true);
-
-      toast({
-        title: 'Business Registered',
-        description: 'Frontend signup complete. Backend integration can be added later.',
+        password: data.password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/admin`,
+          data: {
+            name: data.adminName,
+          }
+        }
       });
 
+      if (authError) throw authError;
+      if (!authData.user) throw new Error('User creation failed');
+
+      // 2. Create company
+      const { data: companyData, error: companyError } = await (supabase as any)
+        .from('companies')
+        .insert([{
+          company_name: data.companyName,
+          business_type: data.businessType,
+          location: data.location,
+          email: data.companyEmail,
+          phone: data.companyPhone,
+        }])
+        .select()
+        .single();
+
+      if (companyError) throw companyError;
+
+      // 3. Create profile
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .insert([{
+          id: authData.user.id,
+          company_id: companyData.id,
+          name: data.adminName,
+          email: data.adminEmail,
+          phone: data.companyPhone,
+        }]);
+
+      if (profileError) throw profileError;
+
+      // 4. Assign admin role
+      const { error: roleError } = await supabase
+        .from('user_roles')
+        .insert([{
+          user_id: authData.user.id,
+          role: 'admin',
+        }]);
+
+      if (roleError) throw roleError;
+
+      toast({
+        title: 'Business Registered Successfully',
+        description: 'Your account has been created. Redirecting to dashboard...',
+      });
+
+      // Navigate to admin dashboard
       navigate('/admin');
     } catch (error: any) {
       toast({
