@@ -7,6 +7,20 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/hooks/useAuth";
 import { Mail, Lock, User, Building2, MapPin, Phone } from "lucide-react";
+import { z } from 'zod';
+import { useToast } from '@/hooks/use-toast';
+
+const signupSchema = z.object({
+  companyName: z.string().trim().min(2, 'Company name must be at least 2 characters').max(100, 'Company name too long'),
+  businessType: z.enum(['retail', 'services', 'technology', 'manufacturing', 'healthcare', 'education', 'other']),
+  location: z.string().trim().min(2, 'Location must be at least 2 characters').max(100, 'Location too long'),
+  companyEmail: z.string().email('Invalid email address').max(255, 'Email too long'),
+  companyPhone: z.string().regex(/^[+]?[0-9\s\-()]+$/, 'Invalid phone number').max(20, 'Phone number too long').optional().or(z.literal('')),
+  adminName: z.string().trim().min(2, 'Name must be at least 2 characters').max(100, 'Name too long'),
+  adminEmail: z.string().email('Invalid email address').max(255, 'Email too long'),
+  adminPhone: z.string().regex(/^[+]?[0-9\s\-()]+$/, 'Invalid phone number').max(20, 'Phone number too long').optional().or(z.literal('')),
+  password: z.string().min(8, 'Password must be at least 8 characters').max(100, 'Password too long'),
+});
 
 const Signup = () => {
   // Company fields
@@ -19,16 +33,19 @@ const Signup = () => {
   // Admin user fields
   const [adminName, setAdminName] = useState("");
   const [adminEmail, setAdminEmail] = useState("");
+  const [adminPhone, setAdminPhone] = useState("");
   const [password, setPassword] = useState("");
   
   const [loading, setLoading] = useState(false);
   const { signup } = useAuth();
+  const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
-      await signup({
+      // Validate input
+      const validationResult = signupSchema.safeParse({
         companyName,
         businessType,
         location,
@@ -36,10 +53,23 @@ const Signup = () => {
         companyPhone,
         adminName,
         adminEmail,
-        password
+        adminPhone,
+        password,
       });
+
+      if (!validationResult.success) {
+        const firstError = validationResult.error.errors[0];
+        toast({
+          title: "Validation Error",
+          description: firstError.message,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      await signup(validationResult.data as any);
     } catch (error) {
-      console.error('Signup error:', error);
+      // Error handling done in useAuth
     } finally {
       setLoading(false);
     }
@@ -166,19 +196,36 @@ const Signup = () => {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="adminEmail">Admin Email</Label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="adminEmail"
-                    type="email"
-                    placeholder="admin@yourcompany.com"
-                    value={adminEmail}
-                    onChange={(e) => setAdminEmail(e.target.value)}
-                    className="pl-10"
-                    required
-                  />
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="adminEmail">Admin Email</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="adminEmail"
+                      type="email"
+                      placeholder="admin@yourcompany.com"
+                      value={adminEmail}
+                      onChange={(e) => setAdminEmail(e.target.value)}
+                      className="pl-10"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="adminPhone">Admin Phone</Label>
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="adminPhone"
+                      type="tel"
+                      placeholder="+250 788 123 456"
+                      value={adminPhone}
+                      onChange={(e) => setAdminPhone(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
                 </div>
               </div>
 
