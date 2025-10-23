@@ -106,12 +106,15 @@ const AdminDashboard = () => {
     }
     
     try {
-      // 1. Create the auth user
+      // 1. Create the auth user with admin_created flag
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: newUserEmail,
         password: newUserPassword,
         options: {
           emailRedirectTo: `${window.location.origin}/`,
+          data: {
+            admin_created: 'true',
+          },
         },
       });
 
