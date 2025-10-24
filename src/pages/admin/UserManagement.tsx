@@ -37,6 +37,8 @@ import { Badge } from "@/components/ui/badge";
 import { UserPlus, Trash2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { AdminSidebar } from "@/components/AdminSidebar";
+import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 
 interface TeamMember {
   id: string;
@@ -200,150 +202,163 @@ export default function UserManagement() {
   };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">User Management</h1>
-        <p className="text-muted-foreground">
-          Manage users, roles, and access permissions
-        </p>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <div className="flex justify-between items-center">
-            <div>
-              <CardTitle>Team Members</CardTitle>
-              <CardDescription>Manage your team and assign roles</CardDescription>
-            </div>
-            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-              <DialogTrigger asChild>
-                <Button>
-                  <UserPlus className="mr-2 h-4 w-4" />
-                  Add User
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Add New Team Member</DialogTitle>
-                  <DialogDescription>
-                    Add a new user to your organization
-                  </DialogDescription>
-                </DialogHeader>
-                <form onSubmit={handleAddUser} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Full Name</Label>
-                    <Input
-                      id="name"
-                      value={newUserName}
-                      onChange={(e) => setNewUserName(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={newUserEmail}
-                      onChange={(e) => setNewUserEmail(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="password">Password</Label>
-                    <Input
-                      id="password"
-                      type="password"
-                      value={newUserPassword}
-                      onChange={(e) => setNewUserPassword(e.target.value)}
-                      required
-                      minLength={6}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="role">Role</Label>
-                    <Select value={newUserRole} onValueChange={setNewUserRole}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="admin">Admin</SelectItem>
-                        <SelectItem value="marketer">Marketer</SelectItem>
-                        <SelectItem value="sales">Sales</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <Button type="submit" className="w-full">
-                    Add User
-                  </Button>
-                </form>
-              </DialogContent>
-            </Dialog>
+    <SidebarProvider>
+      <AdminSidebar />
+      <SidebarInset>
+        <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
+          <SidebarTrigger className="-ml-1" />
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-bold">User Management</h1>
           </div>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Joined</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {loading ? (
-                <TableRow>
-                  <TableCell colSpan={5} className="text-center">
-                    Loading...
-                  </TableCell>
-                </TableRow>
-              ) : teamMembers.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={5} className="text-center">
-                    No team members yet
-                  </TableCell>
-                </TableRow>
-              ) : (
-                teamMembers.map((member) => (
-                  <TableRow key={member.id}>
-                    <TableCell className="font-medium">{member.name}</TableCell>
-                    <TableCell>{member.email}</TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={
-                          member.role === "admin"
-                            ? "default"
-                            : member.role === "marketer"
-                            ? "secondary"
-                            : "outline"
-                        }
-                      >
-                        {member.role}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {new Date(member.created_at).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {member.id !== user?.id && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDeleteUser(member.id)}
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
+        </header>
+        <main className="flex-1 p-6 overflow-auto">
+          <div className="space-y-6">
+            <div>
+              <h1 className="text-3xl font-bold">User Management</h1>
+              <p className="text-muted-foreground">
+                Manage users, roles, and access permissions
+              </p>
+            </div>
+
+            <Card>
+              <CardHeader>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <CardTitle>Team Members</CardTitle>
+                    <CardDescription>Manage your team and assign roles</CardDescription>
+                  </div>
+                  <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button>
+                        <UserPlus className="mr-2 h-4 w-4" />
+                        Add User
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Add New Team Member</DialogTitle>
+                        <DialogDescription>
+                          Add a new user to your organization
+                        </DialogDescription>
+                      </DialogHeader>
+                      <form onSubmit={handleAddUser} className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="name">Full Name</Label>
+                          <Input
+                            id="name"
+                            value={newUserName}
+                            onChange={(e) => setNewUserName(e.target.value)}
+                            required
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="email">Email</Label>
+                          <Input
+                            id="email"
+                            type="email"
+                            value={newUserEmail}
+                            onChange={(e) => setNewUserEmail(e.target.value)}
+                            required
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="password">Password</Label>
+                          <Input
+                            id="password"
+                            type="password"
+                            value={newUserPassword}
+                            onChange={(e) => setNewUserPassword(e.target.value)}
+                            required
+                            minLength={6}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="role">Role</Label>
+                          <Select value={newUserRole} onValueChange={setNewUserRole}>
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="admin">Admin</SelectItem>
+                              <SelectItem value="marketer">Marketer</SelectItem>
+                              <SelectItem value="sales">Sales</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <Button type="submit" className="w-full">
+                          Add User
                         </Button>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-    </div>
+                      </form>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Role</TableHead>
+                      <TableHead>Joined</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {loading ? (
+                      <TableRow>
+                        <TableCell colSpan={5} className="text-center">
+                          Loading...
+                        </TableCell>
+                      </TableRow>
+                    ) : teamMembers.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={5} className="text-center">
+                          No team members yet
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      teamMembers.map((member) => (
+                        <TableRow key={member.id}>
+                          <TableCell className="font-medium">{member.name}</TableCell>
+                          <TableCell>{member.email}</TableCell>
+                          <TableCell>
+                            <Badge
+                              variant={
+                                member.role === "admin"
+                                  ? "default"
+                                  : member.role === "marketer"
+                                  ? "secondary"
+                                  : "outline"
+                              }
+                            >
+                              {member.role}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            {new Date(member.created_at).toLocaleDateString()}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {member.id !== user?.id && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDeleteUser(member.id)}
+                              >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </div>
+        </main>
+      </SidebarInset>
+    </SidebarProvider>
   );
 }
