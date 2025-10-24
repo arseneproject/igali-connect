@@ -146,6 +146,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (error) throw error;
       if (!data.user) throw new Error('Login failed');
 
+      console.log('Auth successful, user:', data.user);
       await fetchUserData(data.user.id);
       
       // Fetch user role to determine redirect
@@ -153,13 +154,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .from('user_roles')
         .select('role')
         .eq('user_id', data.user.id)
-        .single();
+        .maybeSingle();
 
-      if (roleError || !roleData) {
+      console.log('Role query result:', { roleData, roleError });
+
+      if (roleError) {
+        console.error('Role fetch error:', roleError);
+        throw new Error('User role not found. Please contact support.');
+      }
+
+      if (!roleData) {
+        console.error('No role data found for user:', data.user.id);
         throw new Error('User role not found. Please contact support.');
       }
 
       const userRole = roleData.role as UserRole;
+      console.log('Resolved user role:', userRole);
 
       const roleDashboards: Record<UserRole, string> = {
         admin: '/admin',
@@ -175,6 +185,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       navigate(roleDashboards[userRole]);
     } catch (error: any) {
+      console.error('Login error:', error);
       toast({
         title: "Login failed",
         description: error.message || "Invalid credentials. Please try again.",
