@@ -1,14 +1,10 @@
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, TrendingUp, Phone, BarChart3, Mail } from "lucide-react";
+import { Users, TrendingUp, Mail } from "lucide-react";
+import { salesMenuItems } from "./salesMenuItems";
 
 const SalesDashboard = () => {
-  const menuItems = [
-    { label: "Dashboard", path: "/sales", icon: <BarChart3 className="h-4 w-4" /> },
-    { label: "Leads", path: "/sales/leads", icon: <Users className="h-4 w-4" /> },
-    { label: "Reports", path: "/sales/reports", icon: <TrendingUp className="h-4 w-4" /> },
-    { label: "Contacts", path: "/sales/contacts", icon: <Phone className="h-4 w-4" /> },
-  ];
+  const menuItems = salesMenuItems;
 
   return (
     <DashboardLayout title="Sales Dashboard" menuItems={menuItems}>
