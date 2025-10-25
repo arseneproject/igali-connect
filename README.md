@@ -1,73 +1,161 @@
-# Welcome to your Lovable project
+Marketing Automation System
 
-## Project info
+A modern web platform designed to help companies efficiently manage marketing, sales, and operational data.
+This project includes Company, Marketer, and Sales dashboards, each with tailored tools and insights.
 
-**URL**: https://lovable.dev/projects/6d2ba2da-369f-41ab-b3da-e9d94a469c57
+🧭 Overview
 
-## How can I edit this code?
+This system allows businesses to:
 
-There are several ways of editing your application.
+Register their companies and manage teams (marketers and sales staff).
 
-**Use Lovable**
+Track marketing campaigns, leads, and client engagement.
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/6d2ba2da-369f-41ab-b3da-e9d94a469c57) and start prompting.
+Monitor sales performance and manage transactions.
 
-Changes made via Lovable will be committed automatically to this repo.
+Visualize real-time analytics across departments using Supabase and React.
 
-**Use your preferred IDE**
+🏗️ Tech Stack
+Category	Technology
+Frontend	React + Vite + Tailwind CSS + shadcn/ui + Lucide Icons
+Backend	Supabase (PostgreSQL, Auth, Storage, Realtime)
+Deployment	Vercel / Netlify (Frontend), Supabase (Backend)
+State Management	Context API
+Authentication	Supabase Auth (Email/Password)
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+🧩 Database Schema (Supabase)
+🏢 companies
+Column	Type	Description
+id	uuid	Primary key
+name	text	Company name
+business_type	text	e.g., Retail, Services, etc.
+location	text	Company location
+phone	text	Contact number
+email	text	Company email
+created_at	timestamp	Record creation date
+👨‍💼 users
+Column	Type	Description
+id	uuid	Primary key
+company_id	uuid	FK → companies.id
+name	text	Full name
+email	text	Email address
+phone	text	Contact number
+role	text	Enum: admin, marketer, sales
+password	text	(Managed by Supabase Auth)
+created_at	timestamp	Record creation date
+📊 campaigns
+Column	Type	Description
+id	uuid	Primary key
+company_id	uuid	FK → companies.id
+marketer_id	uuid	FK → users.id
+name	text	Campaign name
+description	text	Campaign details
+budget	numeric	Allocated budget
+start_date	date	Campaign start date
+end_date	date	Campaign end date
+status	text	Enum: active, paused, completed
+created_at	timestamp	Record creation date
+💰 sales
+Column	Type	Description
+id	uuid	Primary key
+company_id	uuid	FK → companies.id
+sales_person_id	uuid	FK → users.id
+client_name	text	Customer name
+product	text	Product sold
+amount	numeric	Sale amount
+date	date	Date of sale
+status	text	Enum: pending, paid, cancelled
+created_at	timestamp	Record creation date
+📈 leads
+Column	Type	Description
+id	uuid	Primary key
+marketer_id	uuid	FK → users.id
+company_id	uuid	FK → companies.id
+name	text	Lead name
+email	text	Lead email
+phone	text	Lead phone
+status	text	Enum: new, contacted, converted, lost
+source	text	Campaign or channel
+created_at	timestamp	Record creation date
+🧭 User Roles and Dashboards
+👨‍💼 Company Admin
 
-Follow these steps:
+Manage company information and team members.
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+Add marketers and sales team accounts.
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+View global performance analytics.
 
-# Step 3: Install the necessary dependencies.
-npm i
+Assign campaigns or targets.
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+📣 Marketer Dashboard
+
+Create and manage marketing campaigns.
+
+Add and track leads.
+
+Measure campaign performance.
+
+Collaborate with sales teams.
+
+💵 Sales Dashboard
+
+Manage customer sales and transactions.
+
+Update payment statuses.
+
+Track sales targets and history.
+
+View commissions and performance charts.
+
+🧠 Features
+
+✅ Company registration & authentication
+✅ Role-based dashboard access
+✅ Campaign & lead management
+✅ Sales tracking & analytics
+✅ Real-time data with Supabase
+✅ Responsive, modern UI with Tailwind & shadcn/ui
+
+⚙️ Setup Instructions
+1. Clone the Repository
+git clone https://github.com/yourusername/business-platform.git
+cd business-platform
+
+2. Install Dependencies
+npm install
+
+3. Add Environment Variables
+
+Create a .env file:
+
+VITE_SUPABASE_URL=your-supabase-url
+VITE_SUPABASE_ANON_KEY=your-supabase-anon-key
+
+4. Run the App
 npm run dev
-```
 
-**Edit a file directly in GitHub**
+5. Deploy
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+Frontend: Deploy to Vercel
+ or Netlify
 
-**Use GitHub Codespaces**
+Backend: Supabase auto-deployment
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+🧑‍💻 Contributing
 
-## What technologies are used for this project?
+Fork the repo
 
-This project is built with:
+Create a new branch (feature/new-feature)
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+Commit your changes
 
-## How can I deploy this project?
+Push and create a Pull Request
 
-Simply open [Lovable](https://lovable.dev/projects/6d2ba2da-369f-41ab-b3da-e9d94a469c57) and click on Share -> Publish.
+📄 License
 
-## Can I connect a custom domain to my Lovable project?
+This project is licensed under the MIT License — free for personal and commercial use.
 
-Yes, you can!
+📞 Contact
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
